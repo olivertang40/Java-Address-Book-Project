@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class AddressBook {
 
@@ -19,9 +20,9 @@ public class AddressBook {
 
         while(!quit){
             //Display Menu options
-            System.out.println("**************************");
-            System.out.println("*** Welcome to Address Book app menu ***");
-            System.out.println("\t1) - Add an entry\n");
+            System.out.println("***************************************");
+            System.out.println("*** Welcome to Address Book app menu ***\n");
+            System.out.println("\t1) Add an entry\n");
             System.out.println("\t2) Remove an entry\n");
             System.out.println("\t3) Search for a specific entry\n");
             System.out.println("\t4) Print Address Book\n");
@@ -41,7 +42,7 @@ public class AddressBook {
             }
 
             if(addresses.size() == 0 && option > 1){
-                System.out.println("The address list is Empty, please add entry first!");
+                System.out.println("Address book is Empty, please add entry first!");
                 continue;
             }
 
@@ -63,6 +64,7 @@ public class AddressBook {
                     break;
                 default:
                     quit = true;
+                    System.out.println("Exiting the application");
                     break;
 
             }
@@ -79,20 +81,21 @@ public class AddressBook {
         String email;
 
 
-        System.out.println("First Name: ");
+        System.out.print("First Name: ");
         firstName = scanner.nextLine();
-        System.out.println("Last Name: ");
+        System.out.print("\nLast Name: ");
         lastName = scanner.nextLine();
-        System.out.println("Phone Number: ");
+        System.out.print("\nPhone Number: ");
         phone = scanner.nextLine();
-        System.out.println("Email Address: ");
+        System.out.print("\nEmail Address: ");
         email = scanner.nextLine();
+        System.out.println();
 
 //        scanner.next
         Entry entry = new Entry();
         entry.setEmail(email);
-        entry.setLastName(lastName);
-        entry.setFirstName(firstName);
+        entry.setLastName(lastName.toLowerCase());
+        entry.setFirstName(firstName.toLowerCase());
         entry.setPhone(phone);
 
         for (Entry address : addresses) {
@@ -103,7 +106,7 @@ public class AddressBook {
             }
         }
         addresses.add(entry);
-        System.out.println("Added new entry!");
+        System.out.println("Added new entry!\n");
         return entry;
     }
 
@@ -120,19 +123,16 @@ public class AddressBook {
 
     public static int getValidNumber(String prompt){
         int number = 0;
-        String input;
 
         while(number == 0){
             System.out.println(prompt);
-            input = scanner.nextLine();
+            String input = scanner.nextLine();
 
             if(input.length() != 0){
-                System.out.println(input);
                 try{
                     number = Integer.parseInt(input);
                 }catch(Exception e){
-                    System.out.println(e.getMessage());
-                    System.out.println("Please enter a valid number from 1 - 6");
+                    System.out.println("Please enter a valid number within range");
                 }
 
             }
@@ -141,61 +141,84 @@ public class AddressBook {
     }
 
 
-    public static Entry search(String type, String input){
-        Optional<Entry> optionalEntry;
-        if(type.equalsIgnoreCase("firstName")){
-            optionalEntry = addresses.stream().filter((a) -> a.getFirstName().equalsIgnoreCase(input)).findFirst();
-        }else if(type.equalsIgnoreCase("lastName")){
-            optionalEntry = addresses.stream().filter(a -> a.getLastName().equalsIgnoreCase(input)).findFirst();
-        }else if(type.equalsIgnoreCase("phone") || type.equalsIgnoreCase("phone number")){
-            optionalEntry = addresses.stream().filter(a -> a.getPhone().equalsIgnoreCase(input)).findFirst();
-        }else if(type.equalsIgnoreCase(("email"))){
-            optionalEntry = addresses.stream().filter(a -> a.getEmail().equalsIgnoreCase(input)).findFirst();
-        }else{
-            System.out.println("Your input type shall be within('firstName','lastName','phone' and 'email')");
-            return null;
+    public static void search(){
+        System.out.println("1) First Name\n");
+        System.out.println("2) Last Name\n");
+        System.out.println("3) Phone Number\n");
+        System.out.println("4) Email Address\n");
+
+        int type = 0;
+        while(type < 1 || type > 4){
+            type = getValidNumber("Choose a search type (1-4): ");
         }
 
-        if(optionalEntry.isPresent()){
-            return optionalEntry.get();
+        System.out.print("Enter your search: ");
+        String input = scanner.nextLine();
+
+        List<Entry> res;
+
+        if(type == 1){
+            res = addresses.stream().filter((a) -> a.getFirstName().contains(input.toLowerCase())).collect(Collectors.toList());
+        }else if(type == 2){
+            res = addresses.stream().filter(a -> a.getLastName().contains(input.toLowerCase())).collect(Collectors.toList());
+        }else if(type == 3){
+            res = addresses.stream().filter(a -> a.getPhone().equalsIgnoreCase(input)).collect(Collectors.toList());
+        }else if(type == 4){
+            res = addresses.stream().filter(a -> a.getEmail().equalsIgnoreCase(input)).collect(Collectors.toList());
+        }else{
+            System.out.println("\nYour search type is invalid");
+            return;
         }
-        try {
-            throw new UserPrincipalNotFoundException("the entry with given type and input is not found");
-        } catch (UserPrincipalNotFoundException e) {
-            System.out.println(e.getMessage());
+
+        if(res.size() == 0){
+            System.out.println("No results found!");
+            return;
         }
-        return null;
+
+        for (Entry entry : res) {
+            printEntry(entry);
+        }
 
     }
 
     public static void printAddressBook(){
-        System.out.println(addresses);
+        addresses.stream().forEach(AddressBook::printEntry);
     }
 
-    public static Entry removeEntry(){
+    public static void removeEntry(){
         System.out.println("Enter an entry's email to remove:");
         String email = scanner.nextLine();
+        Entry found = null;
 
         for (Entry entry : addresses) {
             if(entry.getEmail().equalsIgnoreCase(email)){
-                addresses.remove(entry);
-                System.out.println("Deleted the following entry:");
-                printEntry(entry);
-
+                found = entry;
+                break;
             }
         }
+
+        if(found != null){
+            addresses.remove(found);
+            System.out.println("Deleted the following entry:\n");
+            printEntry(found);
+            return ;
+        }
+
         try {
             throw new UserPrincipalNotFoundException("The required entry is not found in the book with given email");
         } catch (UserPrincipalNotFoundException e) {
             System.out.println(e.getMessage());
         }
-        return null;
     }
 
     public static void printEntry(Entry entry){
         System.out.println("**********");
-        System.out.println(entry);
+        System.out.println("First Name: " + entry.getFirstName());
+        System.out.println("Last Name: " + entry.getLastName());
+        System.out.println("Phone Number: " + entry.getPhone());
+        System.out.println("Email: " + entry.getEmail());
         System.out.println("**********");
+        System.out.println();
     }
 
 
